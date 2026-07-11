@@ -3,6 +3,8 @@
 A small GTK 3 desktop application for keeping track of different kinds of
 countdowns — internal deadlines, external deadlines and events.
 
+![category: Deadline / Event](https://img.shields.io/badge/GTK-3-blue)
+
 ## Features
 
 - Sortable table of countdowns (by **Name**, **Date**, **Countdown** or
@@ -57,19 +59,36 @@ Type=Application
 Name=QDVC Countdowns
 Comment=Keep track of your countdowns
 Exec=python3 /full/path/to/qdvc_countdowns.py
+Path=/full/path/to
 Icon=appointment-soon
 Terminal=false
 Categories=Utility;Office;
+StartupNotify=true
+StartupWMClass=qdvc-countdowns
 ```
 
-Replace `/full/path/to/` with the real location of the checkout. The chosen
-icon, **`appointment-soon`**, is a standard freedesktop icon-theme name that
-suits a countdown/deadline application and needs no bundled image file.
+Replace `/full/path/to` with the real location of the checkout (`Exec` must
+be an absolute path; `Path` is the directory containing `qdvc_countdowns.py`).
 
-Then refresh the desktop database:
+The chosen icon, **`appointment-soon`**, is a standard freedesktop icon-theme
+name that suits a countdown/deadline application and needs no bundled image
+file.
+
+**MATE panel icon.** For the MATE panel (and the taskbar) to show the app's
+icon rather than a generic one, the running window's `WM_CLASS` must match the
+launcher's `StartupWMClass`. The app sets its program name to
+`qdvc-countdowns` at startup (via `GLib.set_prgname`), so the
+`StartupWMClass=qdvc-countdowns` line above is **load-bearing** — it must equal
+that program name. You can verify the running window's class with
+`xprop WM_CLASS` (then click the window); it should report `qdvc-countdowns`.
+If the panel still shows the old icon, log out and back in — MATE caches
+launcher↔WM-class associations per session.
+
+Then refresh (and optionally validate) the desktop database:
 
 ```bash
 update-desktop-database ~/.local/share/applications
+desktop-file-validate ~/.local/share/applications/qdvc-countdowns.desktop
 ```
 
 ## CSV format

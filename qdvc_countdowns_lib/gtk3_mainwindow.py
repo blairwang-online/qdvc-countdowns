@@ -12,7 +12,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gtk  # noqa: E402
 
-from . import APP_NAME, APP_VERSION
+from . import APP_NAME, APP_VERSION, ICON_NAME
 from .config import (Config, TOOLBAR_STYLE_BESIDE)  # noqa: E402
 from .storage import CountdownStore  # noqa: E402
 from .gtk3_dialog import CountdownDialog  # noqa: E402
@@ -33,6 +33,13 @@ class MainWindow(Gtk.Window):
         super().__init__(title=APP_NAME)
         self.store = store
         self.config = config
+
+        # Set the window icon explicitly (in addition to the app-wide
+        # default set in app.py) so the window/taskbar shows the themed
+        # icon even before any .desktop launcher association. The MATE
+        # panel association additionally relies on the WM_CLASS set via
+        # GLib.set_prgname matching the launcher's StartupWMClass.
+        self.set_icon_name(ICON_NAME)
 
         self.set_default_size(720, 480)
         self.set_position(Gtk.WindowPosition.CENTER)

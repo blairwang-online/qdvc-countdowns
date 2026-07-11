@@ -160,10 +160,46 @@ best smoke-tested manually.
 - **Add a toolbar/menu action:** add via `_menu_item` and/or the toolbar
   `add()` helper; append to `_action_widgets` if it needs an open file.
 - **Add an icon:** append to `icons.ICON_NAMES` (stays auto-sorted).
-- **GTK 4 port:** rewrite the three `gtk3_*` modules and the two `gi` import
-  lines in `app.py`. `model`, `storage`, `config`, `icons` should not change.
+- **GTK 4 port:** rewrite the three `gtk3_*` modules and the `gi`/`GLib`/`Gtk`
+  usage in `app.py` (including the `set_prgname` call, which stays but may move
+  into a `Gtk.Application` subclass). `model`, `storage`, `config`, `icons`
+  should not change.
 
-## 7. Known constraints / gotchas
+## 7. Desktop launcher & the MATE panel icon
+
+The application name/window icon and the MATE panel icon are wired together by
+three coordinated pieces (the same technique as `qdvc-bibliotheca`). All three
+must agree or the panel falls back to a generic icon:
+
+1. **Program name → `WM_CLASS`.** `app.py` calls
+   `GLib.set_prgname(WM_CLASS)` **at import time**, before any window is
+   created or realized. This fixes the X11 `WM_CLASS` of the process.
+   Doing it later has no effect once the window class is established.
+   `WM_CLASS` is defined in `qdvc_countdowns_lib/__init__.py` as
+   `"qdvc-countdowns"`.
+2. **Themed icon on window + app.** `ICON_NAME` (also in `__init__.py`) is the
+   standard freedesktop themed icon `appointment-soon`. `app.main()` calls
+   `Gtk.Window.set_default_icon_name(ICON_NAME)` (app-wide default) and
+   `MainWindow.__init__` calls `self.set_icon_name(ICON_NAME)` (per-window),
+   so the icon shows on the window and taskbar even before any `.desktop`
+   association exists. No icon file is bundled.
+3. **`.desktop` `StartupWMClass`.** The launcher (see README) carries
+   `StartupWMClass=qdvc-countdowns`, which **must equal** the `set_prgname`
+   value. This is the load-bearing line that lets the MATE panel associate the
+   running window with the launcher, and hence show the launcher's `Icon=`.
+
+To change the icon, edit `ICON_NAME` in `__init__.py` (it flows to both the
+default and per-window calls) and the `Icon=` line in the `.desktop`. To use
+custom artwork, point `Icon=` at an absolute path to a `.png`/`.svg`. To rename
+the WM class, change `WM_CLASS` **and** the `.desktop` `StartupWMClass`
+together.
+
+Verify at runtime with `xprop WM_CLASS` (click the window) → should report
+`qdvc-countdowns`. MATE caches launcher↔WM-class associations per session, so
+log out/in if the panel still shows a stale icon. Under Wayland, class matching
+is compositor-controlled.
+
+## 8. Known constraints / gotchas
 
 - `Gtk.Calendar` months are 0-based (see `gtk3_dialog.py`).
 - `Gtk.ImageMenuItem` and `Gtk.Toolbar` are deprecated in GTK 3 but are the

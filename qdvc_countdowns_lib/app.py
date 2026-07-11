@@ -12,16 +12,28 @@ import os
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
+from gi.repository import GLib, Gtk  # noqa: E402
 
+from . import ICON_NAME, WM_CLASS
 from .config import Config
 from .storage import CountdownStore
 from .gtk3_mainwindow import MainWindow
+
+# Set the program name at import time, before any window is created or
+# realized. This fixes the X11 WM_CLASS to WM_CLASS so the MATE panel can
+# associate the running window with the .desktop launcher (whose
+# StartupWMClass must match). Doing this later has no effect once the
+# display connection/window class is established.
+GLib.set_prgname(WM_CLASS)
 
 
 def main() -> int:
     config = Config()
     store = CountdownStore()
+
+    # Ensure the themed icon is used for the window, taskbar and, together
+    # with the matching .desktop StartupWMClass, the MATE panel.
+    Gtk.Window.set_default_icon_name(ICON_NAME)
 
     # Optionally reopen the last used file.
     if config.reopen_last_file and config.last_file:
