@@ -27,48 +27,51 @@ class CountdownDialog(Gtk.Dialog):
     def __init__(self, parent: Gtk.Window, countdown: Countdown | None = None):
         title = "Edit Countdown" if countdown else "New Countdown"
         super().__init__(title=title, transient_for=parent, modal=True)
-        self.set_default_size(360, -1)
+        self.set_default_size(480, -1)
         self.add_button("_Cancel", Gtk.ResponseType.CANCEL)
         self.add_button("_Save", Gtk.ResponseType.OK)
         self.set_default_response(Gtk.ResponseType.OK)
 
-        grid = Gtk.Grid(row_spacing=8, column_spacing=8, margin=12)
-        content = self.get_content_area()
-        content.add(grid)
+        # Two-column layout: form fields on the left, an always-visible
+        # calendar on the right.
+        columns = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=18,
+                          margin=12)
+        self.get_content_area().add(columns)
 
-        # --- Name -------------------------------------------------------
-        grid.attach(self._label("Name:"), 0, 0, 1, 1)
+        # ---- LEFT column: Name / Category / Icon ----------------------
+        left = Gtk.Grid(row_spacing=8, column_spacing=8)
+        left.set_valign(Gtk.Align.START)
+        columns.pack_start(left, True, True, 0)
+
+        left.attach(self._label("Name:"), 0, 0, 1, 1)
         self.name_entry = Gtk.Entry(hexpand=True)
         self.name_entry.set_activates_default(True)
-        grid.attach(self.name_entry, 1, 0, 2, 1)
+        left.attach(self.name_entry, 1, 0, 1, 1)
 
-        # --- Date (calendar picker inside a popover-like button) --------
-        grid.attach(self._label("Date:"), 0, 1, 1, 1)
-        self.date_button = Gtk.MenuButton()
-        self.date_label = Gtk.Label()
-        self.date_button.add(self.date_label)
-        self.calendar = Gtk.Calendar()
-        popover = Gtk.Popover()
-        popover.add(self.calendar)
-        self.calendar.show()
-        self.date_button.set_popover(popover)
-        self.calendar.connect("day-selected", self._on_day_selected)
-        self.calendar.connect("day-selected-double-click",
-                              lambda _c: popover.popdown())
-        grid.attach(self.date_button, 1, 1, 2, 1)
-
-        # --- Category ---------------------------------------------------
-        grid.attach(self._label("Category:"), 0, 2, 1, 1)
-        self.category_combo = Gtk.ComboBoxText()
+        left.attach(self._label("Category:"), 0, 1, 1, 1)
+        self.category_combo = Gtk.ComboBoxText(hexpand=True)
         for label in Category.labels():
             self.category_combo.append_text(label)
         self.category_combo.set_active(0)
-        grid.attach(self.category_combo, 1, 2, 2, 1)
+        left.attach(self.category_combo, 1, 1, 1, 1)
 
-        # --- Icon (dropdown showing icon + name) ------------------------
-        grid.attach(self._label("Icon:"), 0, 3, 1, 1)
+        left.attach(self._label("Icon:"), 0, 2, 1, 1)
         self.icon_combo = self._build_icon_combo()
-        grid.attach(self.icon_combo, 1, 3, 2, 1)
+        self.icon_combo.set_hexpand(True)
+        left.attach(self.icon_combo, 1, 2, 1, 1)
+
+        # ---- RIGHT column: always-visible calendar --------------------
+        right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        right.set_valign(Gtk.Align.START)
+        columns.pack_start(right, False, False, 0)
+
+        right.pack_start(self._label("Date:"), False, False, 0)
+        self.calendar = Gtk.Calendar()
+        self.calendar.connect("day-selected", self._on_day_selected)
+        right.pack_start(self.calendar, False, False, 0)
+        # Live YYYY-MM-DD readout beneath the calendar.
+        self.date_label = Gtk.Label(xalign=0.0)
+        right.pack_start(self.date_label, False, False, 0)
 
         # --- populate for edit, or defaults for create ------------------
         if countdown is not None:
